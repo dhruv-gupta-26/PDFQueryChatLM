@@ -87,8 +87,10 @@ This Project is inspired from [NoteBookLM by Google](https://notebooklm.google.c
 
 ## Top contributors:
 <a href="https://github.com/Ya-Tin/PDFQueryChatLM/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=github_username/repo_name" alt="contrib.rocks image" />
+  <img src="https://contrib.rocks/image?repo=Ya-Tin/PDFQueryChatLM" />
 </a>
+
+Made with [contrib.rocks](https://contrib.rocks).
 
 
 
