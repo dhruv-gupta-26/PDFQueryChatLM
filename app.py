@@ -1,28 +1,101 @@
 import streamlit as st
-import PyPDF2
+from dotenv import load_dotenv
+from PyPDF2 import PdfReader
+from langchain.text_splitter import CharacterTextSplitter
+from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain.chat_models import openai
+from langchain.memory import ConversationBufferMemory
+from langchain.chains import retrieval_qa
+from htmltemplates import css, bot_template, user_template
+
+def get_pdf_text(pdf_docs):
+    text=""
+    for pdf in pdf_docs:
+        pdf_reader = PdfReader(pdf)
+        for page in pdf_reader.pages:
+            text+=page.extract_text()
+    return text
+
+def chonky(text):
+    text_splitter= CharacterTextSplitter(separator="\n",
+        chunk_size=1000,
+        chunk_overlap=200,
+        length_function=len
+    )
+    chunks = text_splitter.split_text(text)
+    return chunks
+
+def get_vectorstore(text_chunks):
+    # This is the paid stuff
+    embeddings = OpenAIEmbeddings()
+    # embeddings  Will have to figure this one out later
+    # embeddings = HuggingFaceBgeEmbeddings(model_name="hkunlp/instructor-xl")
+
+    vector_store =FAISS.from_texts(text=text_chunks, embeddings=embeddings)
+    return vector_store
+
+def get_conversation_chain(vectorstore):
+    llm = openai()
+    # llm = HuggingFaceHub(repo_id="google/flan-t5-xxl", model_kwargs={"temperature":0.5, "max_length":512})
+    memory = ConversationBufferMemory(
+        memory_key='chat_history', return_messages=True)
+    conversation_chain = retrieval_qa.from_llm(
+        llm=llm,
+        retriever=vectorstore.as_retriever(),
+        memory=memory
+    )
+    return conversation_chain
+
+
+def handle_userinput(user_question):
+    response = st.session_state.conversation({'question': user_question})
+    st.session_state.chat_history = response['chat_history']
+
+    for i, message in enumerate(st.session_state.chat_history):
+        if i % 2 == 0:
+            st.write(user_template.replace(
+                "{{MSG}}", message.content), unsafe_allow_html=True)
+        else:
+            st.write(bot_template.replace(
+                "{{MSG}}", message.content), unsafe_allow_html=True)
 
 def main():
+    load_dotenv()
     st.set_page_config(page_title="PAQ Bot", page_icon="🤖")
-    st.header("🤖 PAQ Bot")
-    st.write("PDF Assistant for Queries Bot")
-    uploaded_file = st.file_uploader("Pick a PDF file", type="pdf")
-    # Uploaded File Text Shower
-    if uploaded_file is not None:
-        pdf_reader = PyPDF2.PdfReader(uploaded_file)
-        text = ""
-        for page in pdf_reader.pages:
-            text += page.extract_text()
-        # Display the extracted text
-        st.text_area("Extracted Text", text, height=200)
-        # Chat input
-        message = st.chat_input("Type Your Message")
+    st.write(css, unsafe_allow_html=True)
+    if "conversation" not in st.session_state:
+        st.session_state.conversation=None
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history=None
 
-    # Sidebar
+    st.header("🤖 PAQ Bot")
+
+    user_question = st.chat_input("Ask a question about your documents:")
+    if user_question:
+        handle_userinput(user_question)
+        
+     # Sidebar
     with st.sidebar:
         st.header("PAQ Bot")
+        st.subheader("Your Documents")
+        pdf_docs = st.file_uploader("Pick a PDF file", type="pdf", accept_multiple_files=True)
+        if st.button("Process"):
+            with st.spinner("Processing"):
+                # Get the pdf text
+                raw_text=get_pdf_text(pdf_docs)                
+                # Get the text chunks
+                text_chunks=chonky(raw_text)
+                # Create the vector store
+                vector_store=get_vectorstore(text_chunks)
+                # Conversation Chain 
+                st.session_state.conversation = get_conversation_chain(vector_store)
+
+        
         st.write("Made with ❤️ by PEC ACM")
         st.write("We call it PEC Bot or PAQ Bot, you can call it whatever you want")
         "[View the source code](https://github.com/Ya-Tin/PDFQueryChatLM.git)"
+
 
 if __name__ == "__main__":
     main()

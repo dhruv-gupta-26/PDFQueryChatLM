@@ -1,0 +1,39 @@
+import pyautogui
+import time
+
+# List of messages to type
+messages = [
+    "https://coveritup.com/products/purple-landscape-glass-case-1 | Purple Landscape Glass Case",
+    "https://coveritup.com/products/pretty-in-black-glass-case | Pretty in Black Glass Case",
+    "https://coveritup.com/products/nyctophilia-glass-case | Nyctophilia Glass Case",
+    "https://coveritup.com/products/black-demon-slayer-glass-case | Buy Black Demon Slayer Glass Case Mobile Phone Cover | Cover It Up",
+    "https://coveritup.com/products/tanjiro-carrying-nezuko-glass-case-glass-case | Tanjiro carrying Nezuko Glass Case",
+    "https://coveritup.com/products/abstract-figures-glass-case | Abstract Figures Glass Case",
+    "https://coveritup.com/products/myriad-birds-insects-and-flowers-ueno-setsugaku-glass-case-glass-case | Myriad Birds, Insects and Flowers - Ueno Setsugaku Glass Case",
+    "https://coveritup.com/products/sing-for-you-glass-case-1 | Sing For You Glass Case",
+    "https://coveritup.com/products/lazy-sloth-glass-case | Lazy Sloth Glass Case",
+    "https://coveritup.com/products/what-if-it-all-goes-right-glass-case | What If It All Goes Right? Glass Case",
+    "https://coveritup.com/products/bloom-in-the-dark-glass-case | Bloom In The Dark Glass Case",
+    "https://coveritup.com/products/cypresses-vincent-van-gogh-1889-glass-case-glass-case | Cypresses, Vincent Van Gogh 1889 Glass Case",
+    "https://coveritup.com/products/pretty-skull-glass-case | Pretty Skull Glass Case",
+    "https://coveritup.com/products/flower-blast-glass-case | Flower Blast Glass Case",
+    "https://coveritup.com/products/hero-from-hell-denji-glass-case-glass-case | Hero From Hell Denji Glass Case",
+    "https://coveritup.com/products/space-panda-glass-case | Space Panda Glass Case",
+    "https://coveritup.com/products/pelargonium-album-bicolor-glass-case-glass-case | Pelargonium album bicolor Glass Case",
+    "https://coveritup.com/products/stilleven-met-bloemen-in-een-kristallen-vaas-gerardina-jacoba-van-de-sande-bakhuyzen-1850-glass-case-glass-case | Stilleven Met Bloemen in Een Kristallen Vaas Gerardina Jacoba van de S",
+    "https://coveritup.com/products/beautiful-animal-glass-case | Beautiful Animal Glass Case",
+    "https://coveritup.com/products/floral-madness-glass-case | Floral Madness Glass Case",
+    "https://coveritup.com/products/official-star-wars-millennium-falcon-glass-case-1 | Buy Official Star Wars Millennium Falcon Glass Case Online",
+    "https://coveritup.com/products/mountain-climbing-glass-case-1 | Mountain Climbing Glass Case",
+    "https://coveritup.com/products/official-star-wars-dark-side-vaporwave-glass-case-1 | Buy Official Star Wars Dark Side Glass Case Cover | Cover It Up"
+]
+
+# Delay to switch to WhatsApp or the target window
+print("You have 10 seconds to switch to the target window...")
+time.sleep(10)
+
+# Type each message and press Enter
+for message in messages:
+    pyautogui.typewrite(message)  # Type the message
+    pyautogui.press("enter")  # Press Enter
+    time.sleep(2)  # Wait 2 seconds between each message
