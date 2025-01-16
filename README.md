@@ -70,7 +70,7 @@ This is an example of how to list things you need to use the software and how to
    ```
 2. Install Python Libraries
    ```sh
-    pip install streamlit pypdf2 langchain python-dotenv faiss-cpu huggingface_hub
+    pip install streamlit pypdf2 langchain python-dotenv faiss-cpu huggingface_hub langchain_community
    ```
 
 3. Run the app.py file using streamlit
