@@ -2,12 +2,20 @@ import streamlit as st
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 from langchain.text_splitter import CharacterTextSplitter
-from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain.chat_models import openai
-from langchain.memory import ConversationBufferMemory
-from langchain.chains import retrieval_qa
 from htmltemplates import css, bot_template, user_template
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI
+import google.generativeai as genai
+from langchain.chains.question_answering import load_qa_chain
+from langchain.prompts import PromptTemplate
+import os
+
+
+load_dotenv()
+os.getenv("GOOGLE_API_KEY")
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
 
 def get_pdf_text(pdf_docs):
     text=""
@@ -27,75 +35,83 @@ def chonky(text):
     return chunks
 
 def get_vectorstore(text_chunks):
-    # This is the paid stuff
-    embeddings = OpenAIEmbeddings()
-    # embeddings  Will have to figure this one out later
-    # embeddings = HuggingFaceBgeEmbeddings(model_name="hkunlp/instructor-xl")
-
-    vector_store =FAISS.from_texts(text=text_chunks, embeddings=embeddings)
+    embeddings = GoogleGenerativeAIEmbeddings(model = "models/embedding-001")
+    vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
+    vector_store.save_local("faiss_index")
     return vector_store
 
-def get_conversation_chain(vectorstore):
-    llm = openai()
-    # llm = HuggingFaceHub(repo_id="google/flan-t5-xxl", model_kwargs={"temperature":0.5, "max_length":512})
-    memory = ConversationBufferMemory(
-        memory_key='chat_history', return_messages=True)
-    conversation_chain = retrieval_qa.from_llm(
-        llm=llm,
-        retriever=vectorstore.as_retriever(),
-        memory=memory
+def get_conversational_chain():
+
+    prompt_template = """
+    Context:\n {context}?\n
+    Question: \n{question}\n
+
+    If the answer is not available in the context, just try to give an answer based on the internet data
+
+    Answer:
+    """
+    model = ChatGoogleGenerativeAI(model="gemini-pro",
+                             temperature=0.7)
+    prompt = PromptTemplate(template = prompt_template, input_variables = ["context", "question"])
+    chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
+
+    return chain
+
+
+def user_input(user_question):
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    new_db = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
+    docs = new_db.similarity_search(user_question)
+    chain = get_conversational_chain()
+    response = chain(
+        {"input_documents": docs, "question": user_question},
+        return_only_outputs=True
     )
-    return conversation_chain
 
-
-def handle_userinput(user_question):
-    response = st.session_state.conversation({'question': user_question})
-    st.session_state.chat_history = response['chat_history']
-
-    for i, message in enumerate(st.session_state.chat_history):
-        if i % 2 == 0:
-            st.write(user_template.replace(
-                "{{MSG}}", message.content), unsafe_allow_html=True)
-        else:
-            st.write(bot_template.replace(
-                "{{MSG}}", message.content), unsafe_allow_html=True)
+    # Append to the session state to maintain chat history
+    st.session_state["messages"].append({"role": "user", "content": user_question})
+    st.session_state["messages"].append({"role": "assistant", "content": response["output_text"]})
 
 def main():
-    load_dotenv()
     st.set_page_config(page_title="PAQ Bot", page_icon="🤖")
     st.write(css, unsafe_allow_html=True)
-    if "conversation" not in st.session_state:
-        st.session_state.conversation=None
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history=None
+
+    # Initialize chat history
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
 
     st.header("🤖 PAQ Bot")
 
+    # Display chat messages
+    for msg in st.session_state["messages"]:
+        st.chat_message(msg["role"]).write(msg["content"])
+
+    # Chat input box
     user_question = st.chat_input("Ask a question about your documents:")
     if user_question:
-        handle_userinput(user_question)
-        
-     # Sidebar
+        user_input(user_question)
+
+    # Sidebar
     with st.sidebar:
         st.header("PAQ Bot")
         st.subheader("Your Documents")
         pdf_docs = st.file_uploader("Pick a PDF file", type="pdf", accept_multiple_files=True)
-        if st.button("Process"):
+        if st.button("Submit & Process") and pdf_docs:
             with st.spinner("Processing"):
                 # Get the pdf text
-                raw_text=get_pdf_text(pdf_docs)                
+                raw_text = get_pdf_text(pdf_docs)
                 # Get the text chunks
-                text_chunks=chonky(raw_text)
+                text_chunks = chonky(raw_text)
                 # Create the vector store
-                vector_store=get_vectorstore(text_chunks)
-                # Conversation Chain 
-                st.session_state.conversation = get_conversation_chain(vector_store)
-
-        
+                vector_store = get_vectorstore(text_chunks)
+                # Notify user
+                st.session_state["file_processed"] = True  # Set a flag in session state
+                st.success("Done")
+        if not pdf_docs and "file_processed" not in st.session_state:
+            st.info("Please upload a PDF file to start.")
         st.write("Made with ❤️ by PEC ACM")
         st.write("We call it PEC Bot or PAQ Bot, you can call it whatever you want")
         "[View the source code](https://github.com/Ya-Tin/PDFQueryChatLM.git)"
-
 
 if __name__ == "__main__":
     main()
