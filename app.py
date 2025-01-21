@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from htmltemplates import css, bot_template, user_template
+# from htmltemplates import css, bot_template, user_template
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
 import google.generativeai as genai
@@ -38,10 +38,8 @@ def get_vectorstore(text_chunks):
     embeddings = GoogleGenerativeAIEmbeddings(model = "models/embedding-001")
     vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
     vector_store.save_local("faiss_index")
-    return vector_store
 
 def get_conversational_chain():
-
     prompt_template = """
     Context:\n {context}?\n
     Question: \n{question}\n
@@ -50,13 +48,10 @@ def get_conversational_chain():
 
     Answer:
     """
-    model = ChatGoogleGenerativeAI(model="gemini-pro",
-                             temperature=0.7)
+    model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.7)
     prompt = PromptTemplate(template = prompt_template, input_variables = ["context", "question"])
     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
-
     return chain
-
 
 def user_input(user_question):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
@@ -67,15 +62,13 @@ def user_input(user_question):
         {"input_documents": docs, "question": user_question},
         return_only_outputs=True
     )
-
     # Append to the session state to maintain chat history
     st.session_state["messages"].append({"role": "user", "content": user_question})
     st.session_state["messages"].append({"role": "assistant", "content": response["output_text"]})
 
 def main():
     st.set_page_config(page_title="PAQ Bot", page_icon="🤖")
-    st.write(css, unsafe_allow_html=True)
-
+    # st.write(css, unsafe_allow_html=True)
     # Initialize chat history
     if "messages" not in st.session_state:
         st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
@@ -105,12 +98,10 @@ def main():
                 # Create the vector store
                 vector_store = get_vectorstore(text_chunks)
                 # Notify user
-                st.session_state["file_processed"] = True  # Set a flag in session state
                 st.success("Done")
-        if not pdf_docs and "file_processed" not in st.session_state:
+        if not pdf_docs:
             st.info("Please upload a PDF file to start.")
         st.write("Made with ❤️ by PEC ACM")
-        st.write("We call it PEC Bot or PAQ Bot, you can call it whatever you want")
         "[View the source code](https://github.com/Ya-Tin/PDFQueryChatLM.git)"
 
 if __name__ == "__main__":
