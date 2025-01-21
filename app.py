@@ -41,8 +41,7 @@ def get_vectorstore(text_chunks):
 
 def get_conversational_chain():
     prompt_template = """
-    You are an AI assistant. Answer the user's question strictly based on the provided context.
-    You can use any external knowledge or make assumptions only if there is answer doesn't exist in the context.
+    Try using Context for finding answer, but if the answer is not available in the context, reply with "Not enough information is available, but I can get an answer based on the Internet knowledge" and generate a response using Internet data.
 
     Context:
     {context}
@@ -84,7 +83,7 @@ def main():
         st.chat_message(msg["role"]).write(msg["content"])
 
     # Chat input box
-    user_question = st.chat_input("Ask a question about your documents:")
+    user_question = st.chat_input("Input your Query here and Press 'Process Query' button")
     if user_question:
         user_input(user_question)
 
@@ -93,7 +92,7 @@ def main():
         st.header("PAQ Bot")
         st.subheader("Your Documents")
         pdf_docs = st.file_uploader("Pick a PDF file", type="pdf", accept_multiple_files=True)
-        if st.button("Submit & Process") and pdf_docs:
+        if st.button("Process Query") and pdf_docs:
             with st.spinner("Processing"):
                 # Get the pdf text
                 raw_text = get_pdf_text(pdf_docs)
