@@ -41,7 +41,7 @@ def get_vectorstore(text_chunks):
 
 def get_conversational_chain():
     prompt_template = """
-    Try using Context for finding answer, but if the answer is not available in the context, reply with "Not enough information is available, but I can get an answer based on the Internet knowledge" and generate a response using Internet data.
+    Try using Context for finding answer, but if the answer is not available in the context, reply with "Not enough information is available in the documents provided, but I can get an answer based on the Internet knowledge" and generate a response using Internet data.
 
     Context:
     {context}
