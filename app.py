@@ -41,10 +41,14 @@ def get_vectorstore(text_chunks):
 
 def get_conversational_chain():
     prompt_template = """
-    Context:\n {context}?\n
-    Question: \n{question}\n
+    You are an AI assistant. Answer the user's question strictly based on the provided context.
+    You can use any external knowledge or make assumptions only if there is answer doesn't exist in the context.
 
-    If the answer is not available in the context, just try to give an answer based on the internet data
+    Context:
+    {context}
+
+    Question:
+    {question}
 
     Answer:
     """
