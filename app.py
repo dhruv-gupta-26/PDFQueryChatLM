@@ -41,15 +41,19 @@ def get_vectorstore(text_chunks):
 
 def get_conversational_chain():
     prompt_template = """
-    Try using Context for finding answer, but if the answer is not available in the context, reply with "Not enough information is available in the documents provided, but I can get an answer based on the Internet knowledge" and generate a response using Internet data.
+You are an AI assistant tasked with answering questions based on the given document context. Ensure that your answer includes all relevant details from the context, especially important names, dates, and specific terminology.
 
-    Context:
-    {context}
+Context:
+{context}
 
-    Question:
-    {question}
+Given this context, carefully extract all relevant details and answer the question:
 
-    Answer:
+Question:
+{question}
+
+Make sure to retain course names, subjects, or any specific terminology mentioned in the context when forming your answer.
+
+Answer:
     """
     model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.7)
     prompt = PromptTemplate(template = prompt_template, input_variables = ["context", "question"])
@@ -59,7 +63,8 @@ def get_conversational_chain():
 def user_input(user_question):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     new_db = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
-    docs = new_db.similarity_search(user_question)
+    docs = new_db.similarity_search(user_question, k=5)  # Retrieve more relevant chunks
+
     chain = get_conversational_chain()
     response = chain(
         {"input_documents": docs, "question": user_question},
@@ -68,6 +73,10 @@ def user_input(user_question):
     # Append to the session state to maintain chat history
     st.session_state["messages"].append({"role": "user", "content": user_question})
     st.session_state["messages"].append({"role": "assistant", "content": response["output_text"]})
+    
+for doc in docs:
+    print(doc.page_content)  # See what text is being retrieved
+
 
 def main():
     st.set_page_config(page_title="PAQ Bot", page_icon="🤖")
